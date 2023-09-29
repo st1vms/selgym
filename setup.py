@@ -8,7 +8,7 @@ with open(join(abspath(dirname(__file__)), "README.md"), "r") as fp:
 
 setup(
     name="selgym",
-    version="0.1.0",
+    version="0.1.1",
     author="st1vms",
     author_email="stefano.maria.salvatore@gmail.com",
     description=__DESCRIPTION,
@@ -23,6 +23,7 @@ setup(
     ],
     python_requires=">=3.9",
     install_requires=[
+        "requests",
         "selenium",
         "screeninfo",
     ],
