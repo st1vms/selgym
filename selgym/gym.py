@@ -40,6 +40,8 @@ def get_firefox_options(
 
     if headless:
         monitor = screeninfo.get_monitors()[0]
+        os.environ["MOZ_HEADLESS_WIDTH"] = str(monitor.width)
+        os.environ["MOZ_HEADLESS_HEIGHT"] = str(monitor.height)
         options.add_argument("--headless")
         options.add_argument(f"--window-size={monitor.width},{monitor.height}")
         options.add_argument("--start-maximized")
