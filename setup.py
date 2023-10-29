@@ -8,7 +8,7 @@ with open(join(abspath(dirname(__file__)), "README.md"), "r") as fp:
 
 setup(
     name="selgym",
-    version="0.1.2",
+    version="0.1.3",
     author="st1vms",
     author_email="stefano.maria.salvatore@gmail.com",
     description=__DESCRIPTION,

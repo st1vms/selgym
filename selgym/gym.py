@@ -30,13 +30,13 @@ def cleanup_resources():
 
 
 def get_firefox_options(
-    firefox_profile: str = "", headless: bool = False, private_mode: bool = False
+    firefox_profile: str = None, headless: bool = False, private_mode: bool = False
 ) -> selenium.webdriver.firefox.options.Options:
     """Returns chrome options instance with given configuration set"""
     options = FirefoxOptions()
-    options.profile = (
-        get_default_firefox_profile() if not firefox_profile else firefox_profile
-    )
+
+    if firefox_profile and isinstance(firefox_profile, str):
+        options.profile = firefox_profile
 
     if headless:
         monitor = screeninfo.get_monitors()[0]
