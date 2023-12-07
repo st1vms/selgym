@@ -1,14 +1,21 @@
-from setuptools import setup, find_packages
+"""selgym"""
 from os.path import dirname, join, abspath
+from setuptools import setup, find_packages
 
-__DESCRIPTION = """Selenium scripting utility library for building scrapers with geckodriver and Firefox"""
+__DESCRIPTION = """Selenium scripting utility library for \
+building scrapers with geckodriver and Firefox"""
 
-with open(join(abspath(dirname(__file__)), "README.md"), "r") as fp:
-    __LONG_DESCRIPTION = fp.read().lstrip().rstrip()
+with open(
+    join(abspath(dirname(__file__)), "README.md"),
+    "r",
+    encoding="utf-8",
+    errors="ignore",
+) as fp:
+    __LONG_DESCRIPTION = fp.read().strip()
 
 setup(
     name="selgym",
-    version="0.1.3",
+    version="0.1.4",
     author="st1vms",
     author_email="stefano.maria.salvatore@gmail.com",
     description=__DESCRIPTION,

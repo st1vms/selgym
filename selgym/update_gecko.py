@@ -1,17 +1,19 @@
-import os
-import platform
-import requests
-import subprocess
-import zipfile
-import tarfile
-import tempfile
-import shutil
+"""update_gecko module"""
+from os import path as ospath
+from os import getcwd, remove
+from platform import system as sys_name
+from subprocess import run
+from zipfile import ZipFile
+from tarfile import open as tar_open
+from shutil import move, which, rmtree
+from tempfile import mkdtemp
+from requests import get as http_get
 
 
-def get_current_geckodriver_version():
+def __get_current_geckodriver_version():
     try:
-        result = subprocess.run(
-            ["geckodriver", "--version"], capture_output=True, text=True
+        result = run(
+            ["geckodriver", "--version"], capture_output=True, text=True, check=False
         )
         version_info = result.stdout.strip().split(" ")[1]
         return version_info.lstrip("v")
@@ -19,44 +21,53 @@ def get_current_geckodriver_version():
         return None
 
 
-def get_latest_geckodriver_version():
+def __get_latest_geckodriver_version():
     url = "https://github.com/mozilla/geckodriver/releases/latest"
-    response = requests.get(url)
+    response = http_get(url, timeout=10)
     latest_version = response.url.split("/")[-1]
     return latest_version.lstrip("v")
 
 
-def download_geckodriver(version: str, destination: str):
+def __download_geckodriver(version: str, destination: str):
     base_url = f"https://github.com/mozilla/geckodriver/releases/download/v{version}/"
-    if platform.system() == "Windows":
+    if sys_name() == "Windows":
         filename = f"geckodriver-v{version}-win64.zip"
-    elif platform.system() == "Linux":
+    elif sys_name() == "Linux":
         filename = f"geckodriver-v{version}-linux64.tar.gz"
     else:
         raise OSError("\nUnsupported operating system")
 
     download_url = base_url + filename
-    response = requests.get(download_url)
+    response = http_get(download_url, timeout=10)
     with open(destination, "wb") as f:
         f.write(response.content)
 
 
-def move_geckodriver_to_windows(geckodriver_path: str):
-    if platform.system() == "Windows":
-        shutil.move(geckodriver_path, "C:\\Windows")
-    elif platform.system() == "Linux":
-        shutil.move(geckodriver_path, os.path.expanduser("~/.local/bin"))
+def __move_gecko_to_path(geckodriver_path: str, out_dir: str = None):
+    if sys_name() == "Windows":
+        if not out_dir or not ospath.isdir(out_dir):
+            out_dir = "C:\\Windows"
+        move(geckodriver_path, out_dir)
+    elif sys_name() == "Linux":
+        if not out_dir or not ospath.isdir(out_dir):
+            out_dir = ospath.expanduser("~/.local/bin")
+        move(geckodriver_path, out_dir)
     else:
         raise OSError("\nUnsupported operating system")
 
 
-def update_geckodriver(ask: bool = True, quiet: bool = False):
-    latest_version = get_latest_geckodriver_version()
-    current_version = get_current_geckodriver_version()
+def update_geckodriver(ask: bool = True, out_dir: str = None, quiet: bool = False):
+    """Automatically downloads and install geckodriver, inside `out_dir` folder.
 
-    qprint = lambda text: print(
-        text if not quiet else "", end="\n" if not quiet else ""
-    )
+    By default, if `out_dir` is omitted, it will install it either
+    on C:/Windows or ~/.local/bin depending on the OS.
+    """
+    latest_version = __get_latest_geckodriver_version()
+    current_version = __get_current_geckodriver_version()
+
+    def qprint(text: str):
+        if not quiet:
+            print(text)
 
     qprint(f"\nCurrent Geckodriver -> {current_version}\nLatest -> {latest_version}")
 
@@ -71,19 +82,19 @@ def update_geckodriver(ask: bool = True, quiet: bool = False):
             .rstrip()
             .lower()
         ):
-            temp_dir = tempfile.mkdtemp(dir=os.getcwd())
+            temp_dir = mkdtemp(dir=getcwd())
             try:
-                zip_file_path = os.path.join(temp_dir, "geckodriver.zip")
+                zip_file_path = ospath.join(temp_dir, "geckodriver.zip")
 
-                download_geckodriver(latest_version, zip_file_path)
+                __download_geckodriver(latest_version, zip_file_path)
 
-                if platform.system() == "Windows":
-                    geckodriver_path = os.path.join(temp_dir, "geckodriver.exe")
-                    with zipfile.ZipFile(zip_file_path, "r") as zip_ref:
+                if sys_name() == "Windows":
+                    geckodriver_path = ospath.join(temp_dir, "geckodriver.exe")
+                    with ZipFile(zip_file_path, "r") as zip_ref:
                         zip_ref.extractall(temp_dir)
-                elif platform.system() == "Linux":
-                    geckodriver_path = os.path.join(temp_dir, "geckodriver")
-                    with tarfile.open(zip_file_path, "r:gz") as tar_ref:
+                elif sys_name() == "Linux":
+                    geckodriver_path = ospath.join(temp_dir, "geckodriver")
+                    with tar_open(zip_file_path, "r:gz") as tar_ref:
                         tar_ref.extractall(temp_dir)
                 else:
                     raise OSError("\nUnsupported operating system")
@@ -92,14 +103,16 @@ def update_geckodriver(ask: bool = True, quiet: bool = False):
 
                 if current_version:
                     qprint(f"\nRemoving old version -> {current_version}...")
-                    os.remove(shutil.which("geckodriver"))
+                    remove(which("geckodriver"))
 
-                move_geckodriver_to_windows(geckodriver_path)
-                qprint(f"\nGeckodriver has been updated to -> {latest_version} !")
+                __move_gecko_to_path(geckodriver_path, out_dir=out_dir)
+                qprint(
+                    f"\nGeckodriver {latest_version} has been installed into -> {out_dir}"
+                )
             finally:
-                shutil.rmtree(temp_dir)
+                rmtree(temp_dir)
     else:
-        qprint(f"\nGeckodriver is already updated -> {shutil.which('geckodriver')}")
+        qprint(f"\nGeckodriver is already updated -> {which('geckodriver')}")
 
 
 if __name__ == "__main__":

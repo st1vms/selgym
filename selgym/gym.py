@@ -1,11 +1,14 @@
-import os
-import platform
-import screeninfo
-import selenium
-import shutil
+"""gym module"""
+from os import path as ospath
+from os import listdir, environ, getenv
+from platform import system as sys_name
+from shutil import which, rmtree
+from screeninfo import get_monitors
+from selenium.webdriver import Firefox as FirefoxWebDriver
 from selenium.webdriver.common.proxy import Proxy, ProxyType
 from selenium.webdriver.firefox.options import Options as FirefoxOptions
 from selenium.webdriver import DesiredCapabilities
+from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -13,25 +16,26 @@ from selenium.webdriver.common.action_chains import ActionChains
 
 
 def cleanup_resources():
-    if platform.system() == "Windows":
-        folder_path = os.path.join(os.environ["LOCALAPPDATA"], "Temp")
-    elif platform.system() == "Linux":
+    """Cleanup unused temporary profile folders"""
+    if sys_name() == "Windows":
+        folder_path = ospath.join(environ["LOCALAPPDATA"], "Temp")
+    elif sys_name() == "Linux":
         folder_path = "/tmp"
     else:
         return
 
-    for filename in os.listdir(folder_path):
-        full_path = os.path.join(folder_path, filename)
-        if os.path.isdir(full_path):
-            for dirPrefix in ["tmp", "rust_mozpr"]:
-                if filename.startswith(dirPrefix):
-                    shutil.rmtree(full_path)
+    for filename in listdir(folder_path):
+        full_path = ospath.join(folder_path, filename)
+        if ospath.isdir(full_path):
+            for prefix in ["tmp", "rust_mozpr"]:
+                if filename.startswith(prefix):
+                    rmtree(full_path)
                     break
 
 
 def get_firefox_options(
     firefox_profile: str = None, headless: bool = False, private_mode: bool = False
-) -> selenium.webdriver.firefox.options.Options:
+) -> FirefoxOptions:
     """Returns chrome options instance with given configuration set"""
     options = FirefoxOptions()
 
@@ -39,9 +43,9 @@ def get_firefox_options(
         options.profile = firefox_profile
 
     if headless:
-        monitor = screeninfo.get_monitors()[0]
-        os.environ["MOZ_HEADLESS_WIDTH"] = str(monitor.width)
-        os.environ["MOZ_HEADLESS_HEIGHT"] = str(monitor.height)
+        monitor = get_monitors()[0]
+        environ["MOZ_HEADLESS_WIDTH"] = str(monitor.width)
+        environ["MOZ_HEADLESS_HEIGHT"] = str(monitor.height)
         options.add_argument("--headless")
         options.add_argument(f"--window-size={monitor.width},{monitor.height}")
         options.add_argument("--start-maximized")
@@ -60,6 +64,7 @@ def get_firefox_options(
 def set_firefox_proxy_opts(
     opts: FirefoxOptions, ip: str, port: int
 ) -> DesiredCapabilities:
+    """Set proxy ip and port of FirefoxOptions (Unauthenticated)"""
     proxy = Proxy()
     proxy.proxy_type = ProxyType.MANUAL
 
@@ -69,27 +74,27 @@ def set_firefox_proxy_opts(
     opts.set_capability("proxy", proxy.to_capabilities())
 
 
-def get_firefox_webdriver(*args, **kwargs) -> selenium.webdriver:
+def get_firefox_webdriver(*args, **kwargs) -> FirefoxWebDriver:
     """Constructor wrapper for Firefox webdriver"""
 
-    if platform.system() == "Windows":
+    if sys_name() == "Windows":
         # Check if firefox is in PATH
-        DEFAULT_WINDWOS_FIREFOX_PATH = "C:\\Program Files\\Mozilla Firefox"
+        default_windows_firefox_path = "C:\\Program Files\\Mozilla Firefox"
         if (
-            not shutil.which("firefox")
-            and os.environ["PATH"].find(DEFAULT_WINDWOS_FIREFOX_PATH) == -1
+            not which("firefox")
+            and environ["PATH"].find(default_windows_firefox_path) == -1
         ):
-            os.environ["PATH"] += f";{DEFAULT_WINDWOS_FIREFOX_PATH}"
+            environ["PATH"] += f";{default_windows_firefox_path}"
 
-    return selenium.webdriver.Firefox(*args, **kwargs)
+    return FirefoxWebDriver(*args, **kwargs)
 
 
 def wait_element_by(
-    driver: selenium.webdriver,
+    driver: FirefoxWebDriver,
     by_type: By,
     match_str: str,
     timeout: int = 10,
-) -> selenium.webdriver.remote.webelement.WebElement:
+) -> WebElement:
     """Calls WebDriverWait on a locator, waiting for visibility"""
     return WebDriverWait(driver, timeout).until(
         EC.visibility_of_element_located((by_type, match_str))
@@ -97,11 +102,11 @@ def wait_element_by(
 
 
 def wait_elements_by(
-    driver: selenium.webdriver,
+    driver: FirefoxWebDriver,
     by_type: By,
     match_str: str,
     timeout: int = 10,
-) -> list[selenium.webdriver.remote.webelement.WebElement]:
+) -> list[WebElement]:
     """Calls WebDriverWait on a locator, waiting for visibility of all elements"""
     return WebDriverWait(driver, timeout).until(
         EC.visibility_of_all_elements_located((by_type, match_str))
@@ -109,11 +114,11 @@ def wait_elements_by(
 
 
 def wait_hidden_element_by(
-    driver: selenium.webdriver,
+    driver: FirefoxWebDriver,
     by_type: By,
     match_str: str,
     timeout: int = 10,
-) -> selenium.webdriver.remote.webelement.WebElement:
+) -> WebElement:
     """Calls WebDriverWait on a locator, waiting for presence located"""
     return WebDriverWait(driver, timeout).until(
         EC.presence_of_element_located((by_type, match_str))
@@ -121,11 +126,11 @@ def wait_hidden_element_by(
 
 
 def wait_hidden_elements_by(
-    driver: selenium.webdriver,
+    driver: FirefoxWebDriver,
     by_type: By,
     match_str: str,
     timeout: int = 10,
-) -> list[selenium.webdriver.remote.webelement.WebElement]:
+) -> list[WebElement]:
     """Calls WebDriverWait on a locator, waiting for presence located for all elements"""
     return WebDriverWait(driver, timeout).until(
         EC.presence_of_all_elements_located((by_type, match_str))
@@ -133,68 +138,69 @@ def wait_hidden_elements_by(
 
 
 def click_element(
-    driver: selenium.webdriver,
-    element: selenium.webdriver.remote.webelement.WebElement,
+    driver: FirefoxWebDriver,
+    element: WebElement,
     timeout: int = 10,
 ) -> None:
     """Calls WebDriverWait on the element, and perform click when the element is clickable"""
     (WebDriverWait(driver, timeout).until(EC.element_to_be_clickable(element))).click()
 
 
-def scroll_element_to_bottom(
-    driver: selenium.webdriver, element: selenium.webdriver.remote.webelement.WebElement
-):
+def scroll_into_element(driver: FirefoxWebDriver, element: WebElement):
+    """Performs element.scrollIntoView()"""
     driver.execute_script("arguments[0].scrollIntoView();", element)
+
+
+def scroll_element_to_bottom(driver: FirefoxWebDriver, element: WebElement):
+    """Performs element.scrollIntoView() and assign element.scrollTop = element.scrollHeight"""
+    scroll_into_element(driver, element)
     driver.execute_script("arguments[0].scrollTop = arguments[0].scrollHeight", element)
 
 
-def scroll_element_to_top(
-    driver: selenium.webdriver, element: selenium.webdriver.remote.webelement.WebElement
-):
-    driver.execute_script("arguments[0].scrollIntoView();", element)
+def scroll_element_to_top(driver: FirefoxWebDriver, element: WebElement):
+    """Performs element.scrollIntoView() and assign element.scrollTop = 0"""
+    scroll_into_element(driver, element)
     driver.execute_script("arguments[0].scrollTop = 0", element)
 
 
-def scroll_into_element(
-    driver: selenium.webdriver, element: selenium.webdriver.remote.webelement.WebElement
-):
-    driver.execute_script("arguments[0].scrollIntoView();", element)
-
-
 def linux_default_firefox_profile_path() -> str:
-    profile_path = os.path.expanduser("~/.mozilla/firefox")
+    """Retrieves .default-release profile path on Linux"""
+    profile_path = ospath.expanduser("~/.mozilla/firefox")
 
-    if not os.path.exists(profile_path):
+    if not ospath.exists(profile_path):
         raise RuntimeError(f"\nUnable to retrieve {profile_path} directory")
 
-    for entry in os.listdir(profile_path):
+    for entry in listdir(profile_path):
         if entry.endswith(".default-release"):
-            return os.path.join(profile_path, entry)
+            return ospath.join(profile_path, entry)
     return None
 
 
 def win_default_firefox_profile_path() -> str:
-    profile_path = os.path.join(os.getenv("APPDATA"), "Mozilla\Firefox\Profiles")
-    for entry in os.listdir(profile_path):
+    """Retrieves .default-release profile path on Windows"""
+    profile_path = ospath.join(getenv("APPDATA"), "Mozilla", "Firefox", "Profiles")
+    for entry in listdir(profile_path):
         if entry.endswith(".default-release"):
-            return os.path.join(profile_path, entry)
+            return ospath.join(profile_path, entry)
     return None
 
 
 def get_default_firefox_profile() -> str:
-    if platform.system() == "Windows":
-        return win_default_firefox_profile_path
-    elif platform.system() == "Linux":
+    """Retrieves .default-release profile path (cross compatible)"""
+    if sys_name() == "Windows":
+        return win_default_firefox_profile_path()
+    elif sys_name() == "Linux":
         return linux_default_firefox_profile_path()
     return ""
 
 
 def dnd_file(
-    driver: selenium.webdriver,
-    element: selenium.webdriver.remote.webelement.WebElement,
+    driver: FirefoxWebDriver,
+    element: WebElement,
     fpath: str,
 ):
-    __DRAG_AND_DROP_SCRIPT = """
+    """Drag&Drop file into element"""
+    dnd_script = """
         var target = arguments[0],
             offsetX = arguments[1],
             offsetY = arguments[2],
@@ -221,15 +227,16 @@ def dnd_file(
         document.body.appendChild(input);
         return input;
     """
-    file_input = driver.execute_script(__DRAG_AND_DROP_SCRIPT, element, 0, 0)
+    file_input = driver.execute_script(dnd_script, element, 0, 0)
     file_input.send_keys(fpath)
 
 
 def dnd_file_alt(
-    driver: selenium.webdriver,
-    element: selenium.webdriver.remote.webelement.WebElement,
+    driver: FirefoxWebDriver,
+    element: WebElement,
     fpath: str,
 ):
+    """Alternative method for Drag&Drop ( in case dnd_file doesn't work )"""
     # Find the target element using the provided CSS selector
 
     # Read the content of the text file
