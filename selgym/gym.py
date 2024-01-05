@@ -183,7 +183,7 @@ def mac_default_firefox_profile_path() -> str:
         raise RuntimeError(f"\nUnable to retrieve {profile_path} directory")
 
     for entry in listdir(profile_path):
-        if ".default-release" in entry:
+        if entry.endswith(".default-release"):
             return ospath.join(profile_path, entry)
     return None
 
@@ -204,9 +204,7 @@ def get_default_firefox_profile() -> str:
         return linux_default_firefox_profile_path()
     elif sys_name() == "Darwin":
         return mac_default_firefox_profile_path()
-    else:
-      raise RuntimeError(f"Unsupported OS: {sys_name()}")
-    return ""
+    raise RuntimeError(f"Unsupported OS: {sys_name()}")
 
 
 def dnd_file(
