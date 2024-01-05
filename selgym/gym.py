@@ -175,6 +175,17 @@ def linux_default_firefox_profile_path() -> str:
             return ospath.join(profile_path, entry)
     return None
 
+def mac_default_firefox_profile_path() -> str:
+    """Retrieves .default-release profile path on MacOS"""
+    profile_path = ospath.expanduser("~/Library/Application Support/Firefox/Profiles")
+
+    if not ospath.exists(profile_path):
+        raise RuntimeError(f"\nUnable to retrieve {profile_path} directory")
+
+    for entry in listdir(profile_path):
+        if entry.endswith(".default-release"):
+            return ospath.join(profile_path, entry)
+    return None
 
 def win_default_firefox_profile_path() -> str:
     """Retrieves .default-release profile path on Windows"""
@@ -191,7 +202,9 @@ def get_default_firefox_profile() -> str:
         return win_default_firefox_profile_path()
     elif sys_name() == "Linux":
         return linux_default_firefox_profile_path()
-    return ""
+    elif sys_name() == "Darwin":
+        return mac_default_firefox_profile_path()
+    raise RuntimeError(f"Unsupported OS: {sys_name()}")
 
 
 def dnd_file(
