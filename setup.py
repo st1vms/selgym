@@ -15,7 +15,7 @@ with open(
 
 setup(
     name="selgym",
-    version="0.1.5",
+    version="0.1.6",
     author="st1vms",
     author_email="stefano.maria.salvatore@gmail.com",
     description=__DESCRIPTION,
