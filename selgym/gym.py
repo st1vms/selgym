@@ -1,4 +1,5 @@
 """gym module"""
+
 from os import path as ospath
 from os import listdir, environ, getenv
 from platform import system as sys_name
@@ -44,16 +45,33 @@ def get_firefox_options(
 
     if headless:
         monitor = get_monitors()[0]
+
+        # Headless window size patch
         environ["MOZ_HEADLESS_WIDTH"] = str(monitor.width)
         environ["MOZ_HEADLESS_HEIGHT"] = str(monitor.height)
         options.add_argument("--headless")
         options.add_argument(f"--window-size={monitor.width},{monitor.height}")
         options.add_argument("--start-maximized")
+
+        # Disables volume
         options.set_preference("media.volume_scale", "0.0")
+
+        # Disable browser cache
         options.set_preference("browser.cache.disk.enable", False)
         options.set_preference("browser.cache.memory.enable", False)
         options.set_preference("browser.cache.offline.enable", False)
         options.set_preference("network.http.use-cache", False)
+
+        # Disables WebRTC
+        options.set_preference("media.peerconnection.enabled", False)
+
+        # Disables homepage
+        options.set_preference("browser.startup.homepage_welcome_url", "")
+        options.set_preference("startup.homepage_welcome_url.additional", "")
+
+        # Disable Firefox's new tab page suggestions and highlights
+        options.set_preference("browser.newtabpage.enabled", False)
+        options.set_preference("browser.sessionstore.resume_from_crash", False)
 
     if private_mode:
         options.set_preference("browser.privatebrowsing.autostart", True)
@@ -175,6 +193,7 @@ def linux_default_firefox_profile_path() -> str:
             return ospath.join(profile_path, entry)
     return None
 
+
 def mac_default_firefox_profile_path() -> str:
     """Retrieves .default-release profile path on MacOS"""
     profile_path = ospath.expanduser("~/Library/Application Support/Firefox/Profiles")
@@ -186,6 +205,7 @@ def mac_default_firefox_profile_path() -> str:
         if entry.endswith(".default-release"):
             return ospath.join(profile_path, entry)
     return None
+
 
 def win_default_firefox_profile_path() -> str:
     """Retrieves .default-release profile path on Windows"""
