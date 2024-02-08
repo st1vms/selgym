@@ -35,10 +35,14 @@ def cleanup_resources():
 
 
 def get_firefox_options(
-    firefox_profile: str = None, headless: bool = False, private_mode: bool = False
+    options: FirefoxOptions = None,
+    firefox_profile: str = None,
+    headless: bool = False,
+    private_mode: bool = False,
 ) -> FirefoxOptions:
     """Returns chrome options instance with given configuration set"""
-    options = FirefoxOptions()
+    if options is None:
+        options = FirefoxOptions()
 
     if firefox_profile and isinstance(firefox_profile, str):
         options.profile = firefox_profile
@@ -220,9 +224,9 @@ def get_default_firefox_profile() -> str:
     """Retrieves .default-release profile path (cross compatible)"""
     if sys_name() == "Windows":
         return win_default_firefox_profile_path()
-    elif sys_name() == "Linux":
+    if sys_name() == "Linux":
         return linux_default_firefox_profile_path()
-    elif sys_name() == "Darwin":
+    if sys_name() == "Darwin":
         return mac_default_firefox_profile_path()
     raise RuntimeError(f"Unsupported OS: {sys_name()}")
 
